@@ -101,8 +101,13 @@ unsafe impl Send for FilecoinApp {}
 pub struct Address {
     /// Public Key
     pub public_key: secp256k1::PublicKey,
+
+    /// Address byte format
+    /// REVIEW: fix to 21 or use `vec`
+    pub addr_byte: [u8;21],
+
     /// Address
-    pub formatted: String,
+    pub addr_string: String,
 }
 
 /// FilecoinApp App Version
@@ -205,11 +210,14 @@ impl FilecoinApp {
                 }
 
                 let public_key = secp256k1::PublicKey::from_slice(&response.data[..PK_LEN])?;
-                let formatted = str::from_utf8(&response.data[33..]).unwrap().to_owned();
+                let mut addr_byte = [Default::default();21];
+                addr_byte.copy_from_slice(&response.data[PK_LEN+1..PK_LEN+1+21]);
+                let addr_string = str::from_utf8(&response.data[PK_LEN+2+21..]).unwrap().to_owned();
 
                 let address = Address {
                     public_key,
-                    formatted,
+                    addr_byte,
+                    addr_string,
                 };
                 Ok(address)
             }
