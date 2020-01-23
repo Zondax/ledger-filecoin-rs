@@ -81,16 +81,16 @@ fn address() {
                 to_hex_string(&addr.addr_byte),
                 "015ef7a0ab9bf25ca47e0e4e04ab311bd5c1ac8de4"
             );
-            assert_eq!(addr.addr_string, "f1l332bk436joki7qojyckwmi32xa2zdpesvuitoi");
+            assert_eq!(
+                addr.addr_string,
+                "f1l332bk436joki7qojyckwmi32xa2zdpesvuitoi"
+            );
 
             println!(
                 "Public Key  {:?}",
                 to_hex_string(&addr.public_key.serialize())
             );
-            println!(
-                "Address Byte Format  {:?}",
-                to_hex_string(&addr.addr_byte)
-            );
+            println!("Address Byte Format  {:?}", to_hex_string(&addr.addr_byte));
             println!("Address String Format  {:?}", addr.addr_string);
         }
         Err(err) => {
@@ -122,9 +122,15 @@ fn address_testnet() {
                 to_hex_string(&addr.addr_byte),
                 "010da3da04b90cad27a181be8c0a658066a4e5988c"
             );
-            assert_eq!(addr.addr_string, "t1bwr5ubfzbswspimbx2gauzmam2solgemalycbmi");
+            assert_eq!(
+                addr.addr_string,
+                "t1bwr5ubfzbswspimbx2gauzmam2solgemalycbmi"
+            );
 
-            println!("Public Key {:?}", to_hex_string(&addr.public_key.serialize()));
+            println!(
+                "Public Key {:?}",
+                to_hex_string(&addr.public_key.serialize())
+            );
             println!("Address Byte Format {:?}", to_hex_string(&addr.addr_byte));
             println!("Address String Format {:?}", addr.addr_string);
         }
