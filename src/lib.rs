@@ -87,6 +87,14 @@ quick_error! {
             display("Secp256k1 error: {}", err)
             cause(err)
         }
+
+        /// Utf8 conversion related error
+        Utf8 ( err: std::str::Utf8Error ) {
+            from()
+            description("Not a utf8 byte string")
+            display("Utf8Error error: {}", err)
+            cause(err)
+        }
     }
 }
 
@@ -211,9 +219,8 @@ impl FilecoinApp {
                 let public_key = secp256k1::PublicKey::from_slice(&response.data[..PK_LEN])?;
                 let mut addr_byte = [Default::default(); 21];
                 addr_byte.copy_from_slice(&response.data[PK_LEN + 1..PK_LEN + 1 + 21]);
-                let addr_string = str::from_utf8(&response.data[PK_LEN + 2 + 21..])
-                    .unwrap()
-                    .to_owned();
+                let tmp = str::from_utf8(&response.data[PK_LEN + 2 + 21..])?;
+                let addr_string = tmp.to_owned();
 
                 let address = Address {
                     public_key,
