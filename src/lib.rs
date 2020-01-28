@@ -117,6 +117,21 @@ pub struct Address {
     pub addr_string: String,
 }
 
+/// FilecoinApp signature (includes R, S, V and der format)
+pub struct Signature {
+    /// r value
+    pub r: [u8;32],
+
+    /// s value
+    pub s: [u8; 32],
+
+    /// v value
+    pub v: u8,
+
+    /// der signature
+    pub sig: secp256k1::Signature,
+}
+
 /// FilecoinApp App Version
 pub struct Version {
     /// Application Mode
@@ -234,7 +249,7 @@ impl FilecoinApp {
     }
 
     /// Sign a transaction
-    pub fn sign(&self, path: &BIP44Path, message: &[u8]) -> Result<secp256k1::Signature, Error> {
+    pub fn sign(&self, path: &BIP44Path, message: &[u8]) -> Result<Signature, Error> {
         let bip44path = serialize_bip44(&path);
         let chunks = message.chunks(USER_MESSAGE_CHUNK_SIZE);
 
@@ -288,11 +303,26 @@ impl FilecoinApp {
             return Err(Error::InvalidSignature);
         }
 
-        let sig_buffer_len = response.data.len();
-        let sig_slice = &response.data[..sig_buffer_len];
-        let sig = secp256k1::Signature::from_der(sig_slice)?;
+        //let sig_buffer_len = response.data.len();
 
-        Ok(sig)
+        let mut r = [Default::default(); 32];
+        r.copy_from_slice(&response.data[..32]);
+
+        let mut s = [Default::default(); 32];
+        s.copy_from_slice(&response.data[32..64]);
+
+        let v = response.data[64];
+
+        let sig = secp256k1::Signature::from_der(&response.data[65..])?;
+
+        let signature = Signature {
+            r,
+            s,
+            v,
+            sig,
+        };
+
+        Ok(signature)
     }
 }
 
