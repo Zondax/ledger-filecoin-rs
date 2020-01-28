@@ -29,9 +29,9 @@ extern crate sha2;
 
 use std::sync::Mutex;
 
+use blake2b_simd::Params;
 use ledger_filecoin::utils::{from_hex_string, to_hex_string};
 use ledger_filecoin::{BIP44Path, Error, FilecoinApp};
-use sha2::{Digest, Sha256};
 
 lazy_static! {
     static ref APP: Mutex<FilecoinApp> = Mutex::new(FilecoinApp::connect().unwrap());
@@ -165,7 +165,7 @@ fn sign_empty() {
 fn sign_verify() {
     let app = APP.lock().unwrap();
 
-    let txstr = "885501fd1d0f4dfcd7e99afcb99a8326b7dc459d32c6285501b882619d46558f3d9e316d11b48dcf211327025a0144000186a0430009c4430061a80040";
+    let txstr = "885501FD1D0F4DFCD7E99AFCB99A8326B7DC459D32C6285501B882619D46558F3D9E316D11B48DCF211327025A0144000186A0430009C4430061A80040";
     let blob = from_hex_string(txstr).unwrap();
 
     let path = BIP44Path {
@@ -176,20 +176,37 @@ fn sign_verify() {
         index: 0,
     };
     match app.sign(&path, &blob) {
-        Ok(sig) => {
-            println!("{:#?}", to_hex_string(&sig.serialize_compact()));
+        Ok(signature) => {
+            println!("{:#?}", to_hex_string(&signature.sig.serialize_compact()));
 
             // First, get public key
             let addr = app.address(&path, false).unwrap();
 
-            let mut hasher = Sha256::new();
-            hasher.input(&blob);
+            let message_hashed = Params::new()
+                .hash_length(32)
+                .to_state()
+                .update(&blob)
+                .finalize();
 
-            let message = secp256k1::Message::from_slice(&hasher.result()).expect("32 bytes");
+            println!("Message hashed {}", &message_hashed.to_hex());
+
+            let cid = from_hex_string("0171a0e40220").unwrap();
+            let cid_hashed = Params::new()
+                .hash_length(32)
+                .to_state()
+                .update(&cid)
+                .update(message_hashed.as_bytes())
+                .finalize();
+
+            println!("Cid hashed {}", &cid_hashed.to_hex());
+
+            let message = secp256k1::Message::from_slice(cid_hashed.as_bytes()).expect("32 bytes");
 
             // Verify signature
             let secp = secp256k1::Secp256k1::new();
-            assert!(secp.verify(&message, &sig, &addr.public_key).is_ok());
+            assert!(secp
+                .verify(&message, &signature.sig, &addr.public_key)
+                .is_ok());
         }
         Err(e) => {
             println!("Err {:#?}", e);
