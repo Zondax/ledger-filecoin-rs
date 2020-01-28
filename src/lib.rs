@@ -120,7 +120,7 @@ pub struct Address {
 /// FilecoinApp signature (includes R, S, V and der format)
 pub struct Signature {
     /// r value
-    pub r: [u8;32],
+    pub r: [u8; 32],
 
     /// s value
     pub s: [u8; 32],
@@ -315,12 +315,7 @@ impl FilecoinApp {
 
         let sig = secp256k1::Signature::from_der(&response.data[65..])?;
 
-        let signature = Signature {
-            r,
-            s,
-            v,
-            sig,
-        };
+        let signature = Signature { r, s, v, sig };
 
         Ok(signature)
     }

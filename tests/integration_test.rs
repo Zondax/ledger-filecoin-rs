@@ -29,9 +29,9 @@ extern crate sha2;
 
 use std::sync::Mutex;
 
+use blake2b_simd::Params;
 use ledger_filecoin::utils::{from_hex_string, to_hex_string};
 use ledger_filecoin::{BIP44Path, Error, FilecoinApp};
-use blake2b_simd::Params;
 
 lazy_static! {
     static ref APP: Mutex<FilecoinApp> = Mutex::new(FilecoinApp::connect().unwrap());
@@ -183,20 +183,20 @@ fn sign_verify() {
             let addr = app.address(&path, false).unwrap();
 
             let message_hashed = Params::new()
-                                    .hash_length(32)
-                                    .to_state()
-                                    .update(&blob)
-                                    .finalize();
+                .hash_length(32)
+                .to_state()
+                .update(&blob)
+                .finalize();
 
             println!("Message hashed {}", &message_hashed.to_hex());
 
             let cid = from_hex_string("0171a0e40220").unwrap();
             let cid_hashed = Params::new()
-                                .hash_length(32)
-                                .to_state()
-                                .update(&cid)
-                                .update(message_hashed.as_bytes())
-                                .finalize();
+                .hash_length(32)
+                .to_state()
+                .update(&cid)
+                .update(message_hashed.as_bytes())
+                .finalize();
 
             println!("Cid hashed {}", &cid_hashed.to_hex());
 
@@ -204,7 +204,9 @@ fn sign_verify() {
 
             // Verify signature
             let secp = secp256k1::Secp256k1::new();
-            assert!(secp.verify(&message, &signature.sig, &addr.public_key).is_ok());
+            assert!(secp
+                .verify(&message, &signature.sig, &addr.public_key)
+                .is_ok());
         }
         Err(e) => {
             println!("Err {:#?}", e);
