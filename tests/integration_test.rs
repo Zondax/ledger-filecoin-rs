@@ -169,9 +169,9 @@ fn sign_empty() {
     let signature = app.sign(&path, some_message0);
     assert!(signature.is_err());
     assert!(matches!(
-            signature.err().unwrap(),
-            Error::InvalidEmptyMessage
-        ));
+        signature.err().unwrap(),
+        Error::InvalidEmptyMessage
+    ));
 }
 
 #[test]
@@ -215,7 +215,8 @@ fn sign_verify() {
 
                 println!("Cid hashed {}", &cid_hashed.to_hex());
 
-                let message = secp256k1::Message::from_slice(cid_hashed.as_bytes()).expect("32 bytes");
+                let message =
+                    secp256k1::Message::from_slice(cid_hashed.as_bytes()).expect("32 bytes");
 
                 // Verify signature
                 let secp = secp256k1::Secp256k1::new();
