@@ -39,7 +39,7 @@ use std::str;
 pub mod utils;
 
 /// Public Key Length
-const PK_LEN: usize = 33;
+const PK_LEN: usize = 65;
 
 quick_error! {
     /// Ledger App Error

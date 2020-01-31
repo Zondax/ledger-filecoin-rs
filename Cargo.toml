@@ -1,9 +1,9 @@
 [package]
 name = "ledger-filecoin"
 description = "Library to integrate with the Ledger Filecoin app"
-version = "0.2.0"
+version = "0.10.0"
 license = "Apache-2.0"
-authors = ["ZondaX GmbH <info@zondax.ch>"]
+authors = ["Zondax GmbH <info@zondax.ch>"]
 homepage = "https://github.com/ZondaX/ledger-filecoin-rs"
 repository = "https://github.com/ZondaX/ledger-filecoin-rs"
 readme = "README.md"
