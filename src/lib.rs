@@ -49,6 +49,10 @@ quick_error! {
         InvalidVersion{
             description("This version is not supported")
         }
+        /// Invalid path
+        InvalidPath{
+            description("Invalid path value (bigger than 0x8000'0000)")
+        }
         /// The message cannot be empty
         InvalidEmptyMessage{
             description("message cannot be empty")
@@ -158,16 +162,27 @@ pub struct BIP44Path {
     pub index: u32,
 }
 
-fn serialize_bip44(path: &BIP44Path) -> Vec<u8> {
+fn serialize_bip44(path: &BIP44Path) -> Result<Vec<u8>, Error> {
     use byteorder::{LittleEndian, WriteBytesExt};
     let mut m = Vec::new();
     let harden = 0x8000_0000;
+
+    if path.purpose > harden
+        || path.coin > harden
+        || path.account > harden
+        || path.change > harden
+        || path.index > harden
+    {
+        return Err(Error::InvalidPath);
+    }
+
     m.write_u32::<LittleEndian>(harden | path.purpose).unwrap();
     m.write_u32::<LittleEndian>(harden | path.coin).unwrap();
     m.write_u32::<LittleEndian>(path.account).unwrap();
     m.write_u32::<LittleEndian>(path.change).unwrap();
     m.write_u32::<LittleEndian>(path.index).unwrap();
-    m
+
+    Ok(m)
 }
 
 impl FilecoinApp {
@@ -209,7 +224,7 @@ impl FilecoinApp {
 
     /// Retrieves the public key and address
     pub fn address(&self, path: &BIP44Path, require_confirmation: bool) -> Result<Address, Error> {
-        let serialized_path = serialize_bip44(path);
+        let serialized_path = serialize_bip44(path)?;
         let p1 = if require_confirmation { 1 } else { 0 };
 
         let command = ApduCommand {
@@ -250,7 +265,7 @@ impl FilecoinApp {
 
     /// Sign a transaction
     pub fn sign(&self, path: &BIP44Path, message: &[u8]) -> Result<Signature, Error> {
-        let bip44path = serialize_bip44(&path);
+        let bip44path = serialize_bip44(&path)?;
         let chunks = message.chunks(USER_MESSAGE_CHUNK_SIZE);
 
         if chunks.len() > 255 {
@@ -335,7 +350,7 @@ mod tests {
             change: 0,
             index: 0x5678,
         };
-        let serialized_path = serialize_bip44(&path);
+        let serialized_path = serialize_bip44(&path).unwrap();
         assert_eq!(serialized_path.len(), 20);
         assert_eq!(
             to_hex_string(&serialized_path),
