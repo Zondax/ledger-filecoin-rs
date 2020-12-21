@@ -165,19 +165,9 @@ pub struct BIP44Path {
 fn serialize_bip44(path: &BIP44Path) -> Result<Vec<u8>, Error> {
     use byteorder::{LittleEndian, WriteBytesExt};
     let mut m = Vec::new();
-    let harden = 0x8000_0000;
 
-    if path.purpose > harden
-        || path.coin > harden
-        || path.account > harden
-        || path.change > harden
-        || path.index > harden
-    {
-        return Err(Error::InvalidPath);
-    }
-
-    m.write_u32::<LittleEndian>(harden | path.purpose).unwrap();
-    m.write_u32::<LittleEndian>(harden | path.coin).unwrap();
+    m.write_u32::<LittleEndian>(path.purpose).unwrap();
+    m.write_u32::<LittleEndian>(path.coin).unwrap();
     m.write_u32::<LittleEndian>(path.account).unwrap();
     m.write_u32::<LittleEndian>(path.change).unwrap();
     m.write_u32::<LittleEndian>(path.index).unwrap();
@@ -344,8 +334,8 @@ mod tests {
     #[test]
     fn bip44() {
         let path = BIP44Path {
-            purpose: 0x2c,
-            coin: 1,
+            purpose: 0x8000_0000 | 0x2c,
+            coin: 0x8000_0000 | 1,
             account: 0x1234,
             change: 0,
             index: 0x5678,
