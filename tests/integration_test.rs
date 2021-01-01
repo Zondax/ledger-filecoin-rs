@@ -53,7 +53,7 @@ fn version() {
                 println!("patch {}", version.patch);
 
                 assert_eq!(version.major, 0x00);
-                assert!(version.minor >= 0x0a);
+                assert!(version.minor >= 0x12);
             }
             Err(err) => {
                 eprintln!("Error: {:?}", err);
@@ -70,8 +70,8 @@ fn address() {
     {
         let app = APP.lock().unwrap();
         let path = BIP44Path {
-            purpose: 44,
-            coin: 461,
+            purpose: 0x8000_0000 | 44,
+            coin: 0x8000_0000 | 461,
             account: 0,
             change: 0,
             index: 0,
@@ -115,8 +115,8 @@ fn address_testnet() {
     {
         let app = APP.lock().unwrap();
         let path = BIP44Path {
-            purpose: 44,
-            coin: 1,
+            purpose: 0x8000_0000 | 44,
+            coin: 0x8000_0000 | 1,
             account: 0,
             change: 0,
             index: 0,
@@ -159,8 +159,8 @@ fn sign_empty() {
     let app = APP.lock().unwrap();
 
     let path = BIP44Path {
-        purpose: 44,
-        coin: 1,
+        purpose: 0x8000_0000 | 44,
+        coin: 0x8000_0000 | 1,
         account: 0,
         change: 0,
         index: 0,
@@ -180,12 +180,12 @@ fn sign_verify() {
     {
         let app = APP.lock().unwrap();
 
-        let txstr = "885501FD1D0F4DFCD7E99AFCB99A8326B7DC459D32C6285501B882619D46558F3D9E316D11B48DCF211327025A0144000186A0430009C4430061A80040";
+        let txstr = "8a0058310396a1a3e4ea7a14d49985e661b22401d44fed402d1d0925b243c923589c0fbc7e32cd04e29ed78d15d37d3aaa3fe6da3358310386b454258c589475f7d16f5aac018a79f6c1169d20fc33921dd8b5ce1cac6c348f90a3603624f6aeb91b64518c2e80950144000186a01961a8430009c44200000040";
         let blob = from_hex_string(txstr).unwrap();
 
         let path = BIP44Path {
-            purpose: 44,
-            coin: 461,
+            purpose: 0x8000_0000 | 44,
+            coin: 0x8000_0000 | 461,
             account: 0,
             change: 0,
             index: 0,
