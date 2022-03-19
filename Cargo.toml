@@ -12,9 +12,6 @@ keywords = ["ledger", "nano", "apdu", "filecoin"]
 edition     = "2018"
 autobenches = false
 
-[badges]
-circle-ci = { repository = "zondax/ledger-filecoin-rs" }
-
 [lib]
 name = "ledger_filecoin"
 
