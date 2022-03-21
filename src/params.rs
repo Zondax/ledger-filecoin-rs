@@ -16,7 +16,6 @@
 #![deny(warnings, trivial_casts, trivial_numeric_casts)]
 #![deny(unused_import_braces, unused_qualifications)]
 #![deny(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/ledger-filecoin/0.1.0")]
 
 pub const CLA: u8 = 0x06;
 pub const INS_GET_VERSION: u8 = 0x00;

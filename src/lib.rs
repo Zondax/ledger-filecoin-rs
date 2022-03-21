@@ -28,7 +28,7 @@ extern crate ledger;
 extern crate quick_error;
 extern crate secp256k1;
 
-use self::ledger::{ApduAnswer, ApduCommand};
+use self::ledger::ApduCommand;
 use self::params::{APDUErrors, PayloadType};
 use crate::params::{
     CLA, INS_GET_ADDR_SECP256K1, INS_GET_VERSION, INS_SIGN_SECP256K1, USER_MESSAGE_CHUNK_SIZE,
@@ -255,7 +255,7 @@ impl FilecoinApp {
 
     /// Sign a transaction
     pub fn sign(&self, path: &BIP44Path, message: &[u8]) -> Result<Signature, Error> {
-        let bip44path = serialize_bip44(&path)?;
+        let bip44path = serialize_bip44(path)?;
         let chunks = message.chunks(USER_MESSAGE_CHUNK_SIZE);
 
         if chunks.len() > 255 {
@@ -267,7 +267,6 @@ impl FilecoinApp {
         }
 
         let packet_count = chunks.len() as u8;
-        let mut response: ApduAnswer;
 
         let _command = ApduCommand {
             cla: CLA,
@@ -278,7 +277,7 @@ impl FilecoinApp {
             data: bip44path,
         };
 
-        response = self.app.exchange(_command)?;
+        let mut response = self.app.exchange(_command)?;
 
         // Send message chunks
         for (packet_idx, chunk) in chunks.enumerate() {
