@@ -23,12 +23,22 @@ extern crate ledger_filecoin;
 
 use std::sync::Mutex;
 
-use blake2b_simd::Params;
+use blake2::{
+    digest::{Update, VariableOutput},
+    VarBlake2b,
+};
+use ecdsa::{signature::Verifier, VerifyingKey};
+use k256::{elliptic_curve::sec1::ToEncodedPoint, Secp256k1};
+
 use ledger_filecoin::{BIP44Path, Error, FilecoinApp};
 
 use once_cell::sync::Lazy;
 
 static APP: Lazy<Mutex<FilecoinApp>> = Lazy::new(|| Mutex::new(FilecoinApp::connect().unwrap()));
+
+fn new_blake2b() -> VarBlake2b {
+    VarBlake2b::with_params(&[], &[], &[], 32)
+}
 
 #[test]
 fn version() {
@@ -73,8 +83,10 @@ fn address() {
 
         match resp {
             Ok(addr) => {
+                let public_key_bytes = addr.public_key.to_encoded_point(true);
+
                 assert_eq!(
-                    hex::encode(&addr.public_key.serialize()),
+                    hex::encode(&public_key_bytes),
                     "0235e752dc6b4113f78edcf2cf7b8082e442021de5f00818f555397a6f181af795"
                 );
                 assert_eq!(
@@ -86,10 +98,7 @@ fn address() {
                     "f1d2xrzcslx7xlbbylc5c3d5lvandqw4iwl6epxba"
                 );
 
-                println!(
-                    "Public Key  {:?}",
-                    hex::encode(&addr.public_key.serialize())
-                );
+                println!("Public Key  {:?}", hex::encode(&public_key_bytes));
                 println!("Address Byte Format  {:?}", hex::encode(&addr.addr_byte));
                 println!("Address String Format  {:?}", addr.addr_string);
             }
@@ -118,8 +127,10 @@ fn address_testnet() {
 
         match resp {
             Ok(addr) => {
+                let public_key_bytes = addr.public_key.to_encoded_point(true);
+
                 assert_eq!(
-                    hex::encode(&addr.public_key.serialize()),
+                    hex::encode(&public_key_bytes),
                     "0266f2bdb19e90fd7c29e4bf63612eb98515e5163c97888042364ba777d818e88b"
                 );
                 assert_eq!(
@@ -131,10 +142,7 @@ fn address_testnet() {
                     "t137sjdbgunloi7couiy4l5nc7pd6k2jmq32vizpy"
                 );
 
-                println!(
-                    "Public Key  {:?}",
-                    hex::encode(&addr.public_key.serialize())
-                );
+                println!("Public Key  {:?}", hex::encode(&public_key_bytes));
                 println!("Address Byte Format  {:?}", hex::encode(&addr.addr_byte));
                 println!("Address String Format  {:?}", addr.addr_string);
             }
@@ -185,37 +193,31 @@ fn sign_verify() {
         };
         match app.sign(&path, &blob) {
             Ok(signature) => {
-                println!("{:#?}", hex::encode(&signature.sig.serialize_compact()));
+                println!("{:#?}", hex::encode(&signature.sig.to_vec()));
 
                 // First, get public key
                 let addr = app.address(&path, false).unwrap();
 
-                let message_hashed = Params::new()
-                    .hash_length(32)
-                    .to_state()
-                    .update(&blob)
-                    .finalize();
+                let mut blake2b = new_blake2b();
+                blake2b.update(&blob);
 
-                println!("Message hashed {}", &message_hashed.to_hex());
+                let message_hashed = blake2b.finalize_boxed_reset();
+                println!("Message hashed {}", hex::encode(&message_hashed));
 
                 let cid = hex::decode("0171a0e40220").unwrap();
-                let cid_hashed = Params::new()
-                    .hash_length(32)
-                    .to_state()
-                    .update(&cid)
-                    .update(message_hashed.as_bytes())
-                    .finalize();
+                blake2b.update(&cid);
+                blake2b.update(&message_hashed);
 
-                println!("Cid hashed {}", &cid_hashed.to_hex());
+                let cid_hashed = blake2b.clone().finalize_boxed();
+                println!("Cid hashed {}", hex::encode(&cid_hashed));
 
-                let message =
-                    secp256k1::Message::from_slice(cid_hashed.as_bytes()).expect("32 bytes");
-
-                // Verify signature
-                let secp = secp256k1::Secp256k1::new();
-                assert!(secp
-                    .verify(&message, &signature.sig, &addr.public_key)
-                    .is_ok());
+                let verifying_key = VerifyingKey::<Secp256k1>::from_encoded_point(
+                    &addr.public_key.to_encoded_point(true),
+                )
+                .unwrap();
+                assert!(verifying_key
+                    .verify(&blake2b.finalize_boxed(), &signature.sig)
+                    .is_ok())
             }
             Err(e) => {
                 println!("Err {:#?}", e);
