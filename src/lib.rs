@@ -20,19 +20,14 @@
 #![deny(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/ledger-filecoin/0.1.0")]
 
+use ledger::ApduCommand;
+
 mod params;
-
-extern crate byteorder;
-extern crate ledger;
-#[macro_use]
-extern crate quick_error;
-extern crate secp256k1;
-
-use self::ledger::ApduCommand;
-use self::params::{APDUErrors, PayloadType};
-use crate::params::{
-    CLA, INS_GET_ADDR_SECP256K1, INS_GET_VERSION, INS_SIGN_SECP256K1, USER_MESSAGE_CHUNK_SIZE,
+use params::{
+    APDUErrors, PayloadType, CLA, INS_GET_ADDR_SECP256K1, INS_GET_VERSION, INS_SIGN_SECP256K1,
+    USER_MESSAGE_CHUNK_SIZE,
 };
+
 use std::str;
 
 /// hex string utilities
@@ -41,65 +36,52 @@ pub mod utils;
 /// Public Key Length
 const PK_LEN: usize = 65;
 
-quick_error! {
-    /// Ledger App Error
-    #[derive(Debug)]
-    pub enum Error {
-        /// Invalid version error
-        InvalidVersion{
-            description("This version is not supported")
-        }
-        /// Invalid path
-        InvalidPath{
-            description("Invalid path value (bigger than 0x8000'0000)")
-        }
-        /// The message cannot be empty
-        InvalidEmptyMessage{
-            description("message cannot be empty")
-        }
-        /// The size fo the message to sign is invalid
-        InvalidMessageSize{
-            description("message size is invalid (too big)")
-        }
-        /// Public Key is invalid
-        InvalidPK{
-            description("received an invalid PK")
-        }
-        /// No signature has been returned
-        NoSignature {
-            description("received no signature back")
-        }
-        /// The signature is not valid
-        InvalidSignature {
-            description("received an invalid signature")
-        }
-        /// The derivation is invalid
-        InvalidDerivationPath {
-            description("invalid derivation path")
-        }
-        /// Device related errors
-        Ledger ( err: ledger::Error ) {
-            from()
-            description("ledger error")
-            display("Ledger error: {}", err)
-            cause(err)
-        }
-        /// Device related errors
-        Secp256k1 ( err: secp256k1::Error ) {
-            from()
-            description("Secp256k1 error")
-            display("Secp256k1 error: {}", err)
-            cause(err)
-        }
+/// Ledger App Error
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// Invalid version error
+    #[error("This version is not supported")]
+    InvalidVersion,
 
-        /// Utf8 conversion related error
-        Utf8 ( err: std::str::Utf8Error ) {
-            from()
-            description("Not a utf8 byte string")
-            display("Utf8Error error: {}", err)
-            cause(err)
-        }
-    }
+    /// Invalid path
+    #[error("Invalid path value (bigger than 0x8000_0000)")]
+    InvalidPath,
+
+    /// The message cannot be empty
+    #[error("Message cannot be empty")]
+    InvalidEmptyMessage,
+
+    /// The size fo the message to sign is invalid
+    #[error("message size is invalid (too big)")]
+    InvalidMessageSize,
+
+    /// Public Key is invalid
+    #[error("received an invalid PK")]
+    InvalidPK,
+
+    /// No signature has been returned
+    #[error("received no signature back")]
+    NoSignature,
+
+    /// The signature is not valid
+    #[error("received an invalid signature")]
+    InvalidSignature,
+
+    /// The derivation is invalid
+    #[error("invalid derivation path")]
+    InvalidDerivationPath,
+
+    /// Device related errors
+    #[error("Ledger error: {0}")]
+    Ledger(#[from] ledger::Error),
+
+    /// Device related errors
+    #[error("Secp256k1 error: {0}")]
+    Secp256k1(#[from] secp256k1::Error),
+
+    /// Utf8 conversion related error
+    #[error("UTF8Error error: {0}")]
+    Utf8(#[from] std::str::Utf8Error),
 }
 
 /// Filecoin App

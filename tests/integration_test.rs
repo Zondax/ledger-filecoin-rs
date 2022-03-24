@@ -19,13 +19,7 @@
 #![deny(unused_import_braces, unused_qualifications)]
 #![deny(missing_docs)]
 
-#[macro_use]
-extern crate lazy_static;
 extern crate ledger_filecoin;
-#[macro_use]
-extern crate matches;
-extern crate secp256k1;
-extern crate sha2;
 
 use std::sync::Mutex;
 
@@ -33,9 +27,9 @@ use blake2b_simd::Params;
 use ledger_filecoin::utils::{from_hex_string, to_hex_string};
 use ledger_filecoin::{BIP44Path, Error, FilecoinApp};
 
-lazy_static! {
-    static ref APP: Mutex<FilecoinApp> = Mutex::new(FilecoinApp::connect().unwrap());
-}
+use once_cell::sync::Lazy;
+
+static APP: Lazy<Mutex<FilecoinApp>> = Lazy::new(|| Mutex::new(FilecoinApp::connect().unwrap()));
 
 #[test]
 fn version() {
