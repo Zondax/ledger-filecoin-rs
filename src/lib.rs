@@ -30,9 +30,6 @@ use params::{
 
 use std::str;
 
-/// hex string utilities
-pub mod utils;
-
 /// Public Key Length
 const PK_LEN: usize = 65;
 
@@ -309,7 +306,6 @@ impl FilecoinApp {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::to_hex_string;
     use crate::{serialize_bip44, BIP44Path};
 
     #[test]
@@ -324,7 +320,7 @@ mod tests {
         let serialized_path = serialize_bip44(&path).unwrap();
         assert_eq!(serialized_path.len(), 20);
         assert_eq!(
-            to_hex_string(&serialized_path),
+            hex::encode(&serialized_path),
             "2c00008001000080341200000000000078560000"
         );
     }

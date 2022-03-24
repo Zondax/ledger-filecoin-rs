@@ -24,7 +24,6 @@ extern crate ledger_filecoin;
 use std::sync::Mutex;
 
 use blake2b_simd::Params;
-use ledger_filecoin::utils::{from_hex_string, to_hex_string};
 use ledger_filecoin::{BIP44Path, Error, FilecoinApp};
 
 use once_cell::sync::Lazy;
@@ -75,11 +74,11 @@ fn address() {
         match resp {
             Ok(addr) => {
                 assert_eq!(
-                    to_hex_string(&addr.public_key.serialize()),
+                    hex::encode(&addr.public_key.serialize()),
                     "0235e752dc6b4113f78edcf2cf7b8082e442021de5f00818f555397a6f181af795"
                 );
                 assert_eq!(
-                    to_hex_string(&addr.addr_byte),
+                    hex::encode(&addr.addr_byte),
                     "011eaf1c8a4bbfeeb0870b1745b1f57503470b7116"
                 );
                 assert_eq!(
@@ -89,9 +88,9 @@ fn address() {
 
                 println!(
                     "Public Key  {:?}",
-                    to_hex_string(&addr.public_key.serialize())
+                    hex::encode(&addr.public_key.serialize())
                 );
-                println!("Address Byte Format  {:?}", to_hex_string(&addr.addr_byte));
+                println!("Address Byte Format  {:?}", hex::encode(&addr.addr_byte));
                 println!("Address String Format  {:?}", addr.addr_string);
             }
             Err(err) => {
@@ -120,11 +119,11 @@ fn address_testnet() {
         match resp {
             Ok(addr) => {
                 assert_eq!(
-                    to_hex_string(&addr.public_key.serialize()),
+                    hex::encode(&addr.public_key.serialize()),
                     "0266f2bdb19e90fd7c29e4bf63612eb98515e5163c97888042364ba777d818e88b"
                 );
                 assert_eq!(
-                    to_hex_string(&addr.addr_byte),
+                    hex::encode(&addr.addr_byte),
                     "01dfe49184d46adc8f89d44638beb45f78fcad2590"
                 );
                 assert_eq!(
@@ -134,9 +133,9 @@ fn address_testnet() {
 
                 println!(
                     "Public Key  {:?}",
-                    to_hex_string(&addr.public_key.serialize())
+                    hex::encode(&addr.public_key.serialize())
                 );
-                println!("Address Byte Format  {:?}", to_hex_string(&addr.addr_byte));
+                println!("Address Byte Format  {:?}", hex::encode(&addr.addr_byte));
                 println!("Address String Format  {:?}", addr.addr_string);
             }
             Err(err) => {
@@ -175,7 +174,7 @@ fn sign_verify() {
         let app = APP.lock().unwrap();
 
         let txstr = "8a0058310396a1a3e4ea7a14d49985e661b22401d44fed402d1d0925b243c923589c0fbc7e32cd04e29ed78d15d37d3aaa3fe6da3358310386b454258c589475f7d16f5aac018a79f6c1169d20fc33921dd8b5ce1cac6c348f90a3603624f6aeb91b64518c2e80950144000186a01961a8430009c44200000040";
-        let blob = from_hex_string(txstr).unwrap();
+        let blob = hex::decode(txstr).unwrap();
 
         let path = BIP44Path {
             purpose: 0x8000_0000 | 44,
@@ -186,7 +185,7 @@ fn sign_verify() {
         };
         match app.sign(&path, &blob) {
             Ok(signature) => {
-                println!("{:#?}", to_hex_string(&signature.sig.serialize_compact()));
+                println!("{:#?}", hex::encode(&signature.sig.serialize_compact()));
 
                 // First, get public key
                 let addr = app.address(&path, false).unwrap();
@@ -199,7 +198,7 @@ fn sign_verify() {
 
                 println!("Message hashed {}", &message_hashed.to_hex());
 
-                let cid = from_hex_string("0171a0e40220").unwrap();
+                let cid = hex::decode("0171a0e40220").unwrap();
                 let cid_hashed = Params::new()
                     .hash_length(32)
                     .to_state()
