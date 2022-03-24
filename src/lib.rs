@@ -23,10 +23,7 @@
 use ledger::ApduCommand;
 
 mod params;
-use params::{
-    APDUErrors, PayloadType, CLA, INS_GET_ADDR_SECP256K1, INS_GET_VERSION, INS_SIGN_SECP256K1,
-    USER_MESSAGE_CHUNK_SIZE,
-};
+use params::{APDUErrors, InstructionCode, PayloadType, CLA, USER_MESSAGE_CHUNK_SIZE};
 
 use std::str;
 
@@ -169,7 +166,7 @@ impl FilecoinApp {
     pub fn version(&self) -> Result<Version, Error> {
         let command = ApduCommand {
             cla: CLA,
-            ins: INS_GET_VERSION,
+            ins: InstructionCode::GetVersion as _,
             p1: 0x00,
             p2: 0x00,
             length: 0,
@@ -202,7 +199,7 @@ impl FilecoinApp {
 
         let command = ApduCommand {
             cla: CLA,
-            ins: INS_GET_ADDR_SECP256K1,
+            ins: InstructionCode::GetAddrSecp256k1 as _,
             p1,
             p2: 0x00,
             length: 0,
@@ -253,7 +250,7 @@ impl FilecoinApp {
 
         let _command = ApduCommand {
             cla: CLA,
-            ins: INS_SIGN_SECP256K1,
+            ins: InstructionCode::SignSecp256k1 as _,
             p1: PayloadType::Init as u8,
             p2: 0x00,
             length: bip44path.len() as u8,
@@ -271,7 +268,7 @@ impl FilecoinApp {
 
             let _command = ApduCommand {
                 cla: CLA,
-                ins: INS_SIGN_SECP256K1,
+                ins: InstructionCode::SignSecp256k1 as _,
                 p1,
                 p2: 0,
                 length: chunk.len() as u8,
