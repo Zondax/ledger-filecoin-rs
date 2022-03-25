@@ -23,10 +23,7 @@ extern crate ledger_filecoin;
 
 use std::sync::Mutex;
 
-use blake2::{
-    digest::{Update, VariableOutput},
-    VarBlake2b,
-};
+use blake2::{digest::typenum, Blake2b, Digest};
 use ecdsa::{signature::Verifier, VerifyingKey};
 use k256::{elliptic_curve::sec1::ToEncodedPoint, Secp256k1};
 
@@ -36,9 +33,7 @@ use once_cell::sync::Lazy;
 
 static APP: Lazy<Mutex<FilecoinApp>> = Lazy::new(|| Mutex::new(FilecoinApp::connect().unwrap()));
 
-fn new_blake2b() -> VarBlake2b {
-    VarBlake2b::with_params(&[], &[], &[], 32)
-}
+type Blake2b256 = Blake2b<typenum::U32>;
 
 #[test]
 fn version() {
@@ -198,17 +193,17 @@ fn sign_verify() {
                 // First, get public key
                 let addr = app.address(&path, false).unwrap();
 
-                let mut blake2b = new_blake2b();
+                let mut blake2b = Blake2b256::new();
                 blake2b.update(&blob);
 
-                let message_hashed = blake2b.finalize_boxed_reset();
+                let message_hashed = blake2b.finalize_reset();
                 println!("Message hashed {}", hex::encode(&message_hashed));
 
                 let cid = hex::decode("0171a0e40220").unwrap();
                 blake2b.update(&cid);
                 blake2b.update(&message_hashed);
 
-                let cid_hashed = blake2b.clone().finalize_boxed();
+                let cid_hashed = blake2b.clone().finalize();
                 println!("Cid hashed {}", hex::encode(&cid_hashed));
 
                 let verifying_key = VerifyingKey::<Secp256k1>::from_encoded_point(
@@ -216,7 +211,7 @@ fn sign_verify() {
                 )
                 .unwrap();
                 assert!(verifying_key
-                    .verify(&blake2b.finalize_boxed(), &signature.sig)
+                    .verify(&blake2b.finalize(), &signature.sig)
                     .is_ok())
             }
             Err(e) => {
