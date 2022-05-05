@@ -21,19 +21,6 @@ pub const CLA: u8 = 0x06;
 
 #[repr(u8)]
 pub enum InstructionCode {
-    GetVersion = 0,
     GetAddrSecp256k1 = 1,
     SignSecp256k1 = 2,
-}
-
-pub const USER_MESSAGE_CHUNK_SIZE: usize = 250;
-
-pub enum PayloadType {
-    Init = 0x00,
-    Add = 0x01,
-    Last = 0x02,
-}
-
-pub enum APDUErrors {
-    NoError = 0x9000,
 }
