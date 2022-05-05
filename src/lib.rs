@@ -20,86 +20,66 @@
 #![deny(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/ledger-filecoin/0.1.0")]
 
+use ledger::ApduCommand;
+
 mod params;
+use params::{APDUErrors, InstructionCode, PayloadType, CLA, USER_MESSAGE_CHUNK_SIZE};
 
-extern crate byteorder;
-extern crate ledger;
-#[macro_use]
-extern crate quick_error;
-extern crate secp256k1;
-
-use self::ledger::ApduCommand;
-use self::params::{APDUErrors, PayloadType};
-use crate::params::{
-    CLA, INS_GET_ADDR_SECP256K1, INS_GET_VERSION, INS_SIGN_SECP256K1, USER_MESSAGE_CHUNK_SIZE,
-};
 use std::str;
-
-/// hex string utilities
-pub mod utils;
 
 /// Public Key Length
 const PK_LEN: usize = 65;
 
-quick_error! {
-    /// Ledger App Error
-    #[derive(Debug)]
-    pub enum Error {
-        /// Invalid version error
-        InvalidVersion{
-            description("This version is not supported")
-        }
-        /// Invalid path
-        InvalidPath{
-            description("Invalid path value (bigger than 0x8000'0000)")
-        }
-        /// The message cannot be empty
-        InvalidEmptyMessage{
-            description("message cannot be empty")
-        }
-        /// The size fo the message to sign is invalid
-        InvalidMessageSize{
-            description("message size is invalid (too big)")
-        }
-        /// Public Key is invalid
-        InvalidPK{
-            description("received an invalid PK")
-        }
-        /// No signature has been returned
-        NoSignature {
-            description("received no signature back")
-        }
-        /// The signature is not valid
-        InvalidSignature {
-            description("received an invalid signature")
-        }
-        /// The derivation is invalid
-        InvalidDerivationPath {
-            description("invalid derivation path")
-        }
-        /// Device related errors
-        Ledger ( err: ledger::Error ) {
-            from()
-            description("ledger error")
-            display("Ledger error: {}", err)
-            cause(err)
-        }
-        /// Device related errors
-        Secp256k1 ( err: secp256k1::Error ) {
-            from()
-            description("Secp256k1 error")
-            display("Secp256k1 error: {}", err)
-            cause(err)
-        }
+/// Ledger App Error
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// Invalid version error
+    #[error("This version is not supported")]
+    InvalidVersion,
 
-        /// Utf8 conversion related error
-        Utf8 ( err: std::str::Utf8Error ) {
-            from()
-            description("Not a utf8 byte string")
-            display("Utf8Error error: {}", err)
-            cause(err)
-        }
-    }
+    /// Invalid path
+    #[error("Invalid path value (bigger than 0x8000_0000)")]
+    InvalidPath,
+
+    /// The message cannot be empty
+    #[error("Message cannot be empty")]
+    InvalidEmptyMessage,
+
+    /// The size fo the message to sign is invalid
+    #[error("message size is invalid (too big)")]
+    InvalidMessageSize,
+
+    /// Public Key is invalid
+    #[error("received an invalid PK")]
+    InvalidPK,
+
+    /// No signature has been returned
+    #[error("received no signature back")]
+    NoSignature,
+
+    /// The signature is not valid
+    #[error("received an invalid signature")]
+    InvalidSignature,
+
+    /// The derivation is invalid
+    #[error("invalid derivation path")]
+    InvalidDerivationPath,
+
+    /// Device related errors
+    #[error("Ledger error: {0}")]
+    Ledger(#[from] ledger::Error),
+
+    /// Device related errors
+    #[error("Secp256k1 error: {0}")]
+    Secp256k1(#[from] k256::elliptic_curve::Error),
+
+    /// Device related errors
+    #[error("Ecdsa error: {0}")]
+    Ecdsa(#[from] k256::ecdsa::Error),
+
+    /// Utf8 conversion related error
+    #[error("UTF8Error error: {0}")]
+    Utf8(#[from] std::str::Utf8Error),
 }
 
 /// Filecoin App
@@ -112,7 +92,7 @@ unsafe impl Send for FilecoinApp {}
 /// FilecoinApp address (includes pubkey and the corresponding ss58 address)
 pub struct Address {
     /// Public Key
-    pub public_key: secp256k1::PublicKey,
+    pub public_key: k256::PublicKey,
 
     /// Address byte format
     pub addr_byte: [u8; 21],
@@ -133,7 +113,7 @@ pub struct Signature {
     pub v: u8,
 
     /// der signature
-    pub sig: secp256k1::Signature,
+    pub sig: k256::ecdsa::Signature,
 }
 
 /// FilecoinApp App Version
@@ -186,7 +166,7 @@ impl FilecoinApp {
     pub fn version(&self) -> Result<Version, Error> {
         let command = ApduCommand {
             cla: CLA,
-            ins: INS_GET_VERSION,
+            ins: InstructionCode::GetVersion as _,
             p1: 0x00,
             p2: 0x00,
             length: 0,
@@ -219,7 +199,7 @@ impl FilecoinApp {
 
         let command = ApduCommand {
             cla: CLA,
-            ins: INS_GET_ADDR_SECP256K1,
+            ins: InstructionCode::GetAddrSecp256k1 as _,
             p1,
             p2: 0x00,
             length: 0,
@@ -236,7 +216,7 @@ impl FilecoinApp {
                     return Err(Error::InvalidPK);
                 }
 
-                let public_key = secp256k1::PublicKey::from_slice(&response.data[..PK_LEN])?;
+                let public_key = k256::PublicKey::from_sec1_bytes(&response.data[..PK_LEN])?;
                 let mut addr_byte = [Default::default(); 21];
                 addr_byte.copy_from_slice(&response.data[PK_LEN + 1..PK_LEN + 1 + 21]);
                 let tmp = str::from_utf8(&response.data[PK_LEN + 2 + 21..])?;
@@ -270,7 +250,7 @@ impl FilecoinApp {
 
         let _command = ApduCommand {
             cla: CLA,
-            ins: INS_SIGN_SECP256K1,
+            ins: InstructionCode::SignSecp256k1 as _,
             p1: PayloadType::Init as u8,
             p2: 0x00,
             length: bip44path.len() as u8,
@@ -288,7 +268,7 @@ impl FilecoinApp {
 
             let _command = ApduCommand {
                 cla: CLA,
-                ins: INS_SIGN_SECP256K1,
+                ins: InstructionCode::SignSecp256k1 as _,
                 p1,
                 p2: 0,
                 length: chunk.len() as u8,
@@ -317,7 +297,7 @@ impl FilecoinApp {
 
         let v = response.data[64];
 
-        let sig = secp256k1::Signature::from_der(&response.data[65..])?;
+        let sig = k256::ecdsa::Signature::from_der(&response.data[65..])?;
 
         let signature = Signature { r, s, v, sig };
 
@@ -327,7 +307,6 @@ impl FilecoinApp {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::to_hex_string;
     use crate::{serialize_bip44, BIP44Path};
 
     #[test]
@@ -342,7 +321,7 @@ mod tests {
         let serialized_path = serialize_bip44(&path).unwrap();
         assert_eq!(serialized_path.len(), 20);
         assert_eq!(
-            to_hex_string(&serialized_path),
+            hex::encode(&serialized_path),
             "2c00008001000080341200000000000078560000"
         );
     }
