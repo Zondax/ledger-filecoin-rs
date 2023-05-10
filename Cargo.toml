@@ -22,13 +22,13 @@ ledger-zondax-generic = "0.9.1"
 thiserror = "1.0.30"
 
 byteorder = "1.4.3"
-k256 = { version = "^13.0", features = ["ecdsa-core", "arithmetic", "std"], default-features = false }
+k256 = { version = "^0.11", features = ["ecdsa-core", "arithmetic", "std"], default-features = false }
 
 [dev-dependencies]
 hex = "0.4.3"
 once_cell = "1.10.0"
 blake2 = "0.10.4"
-k256 = "0.10.4"
+k256 = "^0.11"
 ecdsa = { version = "0.13.4", features = ["verify"] }
 
 tokio = { version = "1", features = ["full"] }
