@@ -32,8 +32,8 @@ jobs:
       - name: rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          # setup sharedKey to share cache with other jobs
-          sharedKey: ${{ github.run_id }}-${{ github.run_attempt }}
+          # setup shared-key to share cache with other jobs
+          shared-key: ${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: clippy
         run: |
@@ -53,8 +53,8 @@ jobs:
       - name: Rust Dependency Cache
         uses: Swatinem/rust-cache@v2
         with:
-          # setup sharedKey to share cache with other jobs
-          sharedKey: ${{ github.run_id }}-${{ github.run_attempt }}
+          # setup shared-key to share cache with other jobs
+          shared-key: ${{ github.run_id }}-${{ github.run_attempt }}
 
       - run: sudo apt-get install -y libudev-dev libusb-1.0.0-dev
       - name: test --all-features
