@@ -22,7 +22,7 @@
 extern crate ledger_filecoin;
 
 use blake2::{digest::typenum, Blake2b, Digest};
-use ecdsa::{signature::Verifier, VerifyingKey};
+use ecdsa::{VerifyingKey, signature::Verifier};
 use k256::{elliptic_curve::sec1::ToEncodedPoint, Secp256k1};
 
 use ledger_filecoin::{BIP44Path, FilError, FilecoinApp, LedgerAppError};
