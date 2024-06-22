@@ -30,7 +30,7 @@ jobs:
           cargo fmt -- --check
 
       - name: rust cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
         with:
           # setup sharedKey to share cache with other jobs
           sharedKey: ${{ github.run_id }}-${{ github.run_attempt }}
@@ -51,7 +51,7 @@ jobs:
           submodules: true
 
       - name: Rust Dependency Cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
         with:
           # setup sharedKey to share cache with other jobs
           sharedKey: ${{ github.run_id }}-${{ github.run_attempt }}
