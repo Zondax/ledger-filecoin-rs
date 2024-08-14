@@ -9,7 +9,7 @@ jobs:
       uid_gid: ${{ steps.get-user.outputs.uid_gid }}
     steps:
       - id: get-user
-        run: echo "::set-output name=uid_gid::$(id -u):$(id -g)"
+        run: echo "uid_gid=$(id -u):$(id -g)" >> $GITHUB_OUTPUT
 
   lint:
     runs-on: ubuntu-latest
@@ -17,7 +17,7 @@ jobs:
       image: zondax/rust-ci:latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: true
       - run: sudo apt-get install -y libudev-dev libusb-1.0-0-dev
@@ -30,10 +30,10 @@ jobs:
           cargo fmt -- --check
 
       - name: rust cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
         with:
-          # setup sharedKey to share cache with other jobs
-          sharedKey: ${{ github.run_id }}-${{ github.run_attempt }}
+          # setup shared-key to share cache with other jobs
+          shared-key: ${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: clippy
         run: |
@@ -46,15 +46,15 @@ jobs:
       image: zondax/rust-ci:latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: true
 
       - name: Rust Dependency Cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
         with:
-          # setup sharedKey to share cache with other jobs
-          sharedKey: ${{ github.run_id }}-${{ github.run_attempt }}
+          # setup shared-key to share cache with other jobs
+          shared-key: ${{ github.run_id }}-${{ github.run_attempt }}
 
       - run: sudo apt-get install -y libudev-dev libusb-1.0.0-dev
       - name: test --all-features
