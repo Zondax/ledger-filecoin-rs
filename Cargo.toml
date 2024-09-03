@@ -33,7 +33,7 @@ ecdsa = { version = "0.16.9", features = ["verifying"] }
 
 tokio = { version = "1", features = ["full"] }
 ledger-transport-hid = "0.9.0"
-serial_test = "0.5.1"
+serial_test = "3.1.1"
 
 [profile.release]
 overflow-checks = true
