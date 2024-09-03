@@ -32,7 +32,7 @@ k256 = "^0.13"
 ecdsa = { version = "0.16.9", features = ["verifying"] }
 
 tokio = { version = "1", features = ["full"] }
-ledger-transport-hid = "0.9.0"
+ledger-transport-hid = "0.11.0"
 serial_test = "3.1.1"
 
 [profile.release]
