@@ -16,7 +16,7 @@ autobenches = false
 name = "ledger_filecoin"
 
 [dependencies]
-ledger-transport = "0.9.0"
+ledger-transport = "0.11.0"
 ledger-zondax-generic = "0.9.1"
 
 thiserror = "1.0.30"
