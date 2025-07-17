@@ -19,7 +19,7 @@ name = "ledger_filecoin"
 ledger-transport = "0.11.0"
 ledger-zondax-generic = "0.11.2"
 
-thiserror = "1.0.30"
+thiserror = "2.0.12"
 
 byteorder = "1.4.3"
 k256 = { version = "^0.13", features = ["ecdsa-core", "arithmetic", "std"], default-features = false }
