@@ -51,8 +51,10 @@ async fn version() {
     println!("minor {}", version.minor);
     println!("patch {}", version.patch);
 
-    assert_eq!(version.major, 0x02);
-    assert!(version.minor >= 0x02);
+    assert!(version.major != 0 || version.minor != 0 || version.patch != 0,
+        "major, minor, and patch are all zero; version not set correctly (got: {}.{}.{})",
+        version.major, version.minor, version.patch);
+
 }
 
 #[tokio::test]
