@@ -27,15 +27,14 @@ pub use ledger_zondax_generic::LedgerAppError;
 
 mod params;
 use params::{
-    InstructionCode, CLA, PK_LEN, ADDR_BYTE_LEN, ECDSA_COMPONENT_LEN,
-    MIN_SIGNATURE_LEN, BIP44_PURPOSE, FILECOIN_COIN_TYPE, BIP44_HARDENED,
+    InstructionCode, ADDR_BYTE_LEN, BIP44_HARDENED, BIP44_PURPOSE, CLA, ECDSA_COMPONENT_LEN,
+    FILECOIN_COIN_TYPE, MIN_SIGNATURE_LEN, PK_LEN,
 };
 
-use std::str;
-use std::fmt;
 use byteorder::{BigEndian, WriteBytesExt};
 use integer_encoding::VarInt;
-
+use std::fmt;
+use std::str;
 
 /// Ledger App Error
 #[derive(Debug, thiserror::Error)]
@@ -142,7 +141,7 @@ impl BIP44Path {
     }
 
     /// Create a standard Filecoin path (m/44'/461'/account'/change/index)
-    /// 
+    ///
     /// # Panics
     /// Panics if account >= 2^31 (hardened bit would be set twice)
     pub fn filecoin(account: u32, change: u32, index: u32) -> Self {
@@ -155,7 +154,7 @@ impl BIP44Path {
             index,
         }
     }
-    
+
     /// Validate that the path follows BIP44 structure
     pub fn validate(&self) -> Result<(), &'static str> {
         // Check that purpose, coin, and account have hardened bit set
@@ -168,12 +167,12 @@ impl BIP44Path {
         if self.account & BIP44_HARDENED == 0 {
             return Err("Account must be hardened");
         }
-        
+
         // Standard BIP44 uses purpose 44'
         if self.purpose != (BIP44_HARDENED | BIP44_PURPOSE) {
             return Err("Non-standard purpose (expected 44')");
         }
-        
+
         Ok(())
     }
 
@@ -183,22 +182,27 @@ impl BIP44Path {
         let mut m = Vec::with_capacity(20); // 5 u32 values = 20 bytes
 
         // These should never fail for Vec<u8> but we handle them defensively
-        m.write_u32::<LittleEndian>(self.purpose).expect("Failed to write purpose");
-        m.write_u32::<LittleEndian>(self.coin).expect("Failed to write coin");
-        m.write_u32::<LittleEndian>(self.account).expect("Failed to write account");
-        m.write_u32::<LittleEndian>(self.change).expect("Failed to write change");
-        m.write_u32::<LittleEndian>(self.index).expect("Failed to write index");
+        m.write_u32::<LittleEndian>(self.purpose)
+            .expect("Failed to write purpose");
+        m.write_u32::<LittleEndian>(self.coin)
+            .expect("Failed to write coin");
+        m.write_u32::<LittleEndian>(self.account)
+            .expect("Failed to write account");
+        m.write_u32::<LittleEndian>(self.change)
+            .expect("Failed to write change");
+        m.write_u32::<LittleEndian>(self.index)
+            .expect("Failed to write index");
 
         m
     }
 }
 
 /// Builder for BIP44Path
-/// 
+///
 /// Provides a convenient way to construct BIP44 derivation paths with validation.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// # use ledger_filecoin::BIP44Path;
 /// let path = BIP44Path::builder()
@@ -231,7 +235,7 @@ impl BIP44PathBuilder {
     }
 
     /// Set purpose (hardened)
-    /// 
+    ///
     /// # Panics
     /// Panics if purpose >= 2^31 (hardened bit would be set twice)
     pub fn purpose(mut self, purpose: u32) -> Self {
@@ -241,7 +245,7 @@ impl BIP44PathBuilder {
     }
 
     /// Set coin (hardened)
-    /// 
+    ///
     /// # Panics
     /// Panics if coin >= 2^31 (hardened bit would be set twice)
     pub fn coin(mut self, coin: u32) -> Self {
@@ -251,7 +255,7 @@ impl BIP44PathBuilder {
     }
 
     /// Set account (hardened)
-    /// 
+    ///
     /// # Panics
     /// Panics if account >= 2^31 (hardened bit would be set twice)
     pub fn account(mut self, account: u32) -> Self {
@@ -275,10 +279,16 @@ impl BIP44PathBuilder {
     /// Build the BIP44Path
     pub fn build(self) -> Result<BIP44Path, BIP44BuilderError> {
         Ok(BIP44Path {
-            purpose: self.purpose.ok_or(BIP44BuilderError::MissingField("purpose"))?,
+            purpose: self
+                .purpose
+                .ok_or(BIP44BuilderError::MissingField("purpose"))?,
             coin: self.coin.ok_or(BIP44BuilderError::MissingField("coin"))?,
-            account: self.account.ok_or(BIP44BuilderError::MissingField("account"))?,
-            change: self.change.ok_or(BIP44BuilderError::MissingField("change"))?,
+            account: self
+                .account
+                .ok_or(BIP44BuilderError::MissingField("account"))?,
+            change: self
+                .change
+                .ok_or(BIP44BuilderError::MissingField("change"))?,
             index: self.index.ok_or(BIP44BuilderError::MissingField("index"))?,
         })
     }
@@ -300,7 +310,7 @@ impl fmt::Display for BIP44Path {
         let purpose = self.purpose & !BIP44_HARDENED;
         let coin = self.coin & !BIP44_HARDENED;
         let account = self.account & !BIP44_HARDENED;
-        
+
         write!(
             f,
             "m/{}'/{}'/{}'/{}/{}",
@@ -329,7 +339,6 @@ where
     E: Exchange + Send + Sync,
     E::Error: std::error::Error,
 {
-
     /// Helper function to parse signature from response
     fn parse_signature(response_data: &[u8]) -> Result<Signature, FilError<E::Error>> {
         // Validate minimum signature length: r + s + v + minimal DER overhead
@@ -487,14 +496,14 @@ where
         let public_key = k256::PublicKey::from_sec1_bytes(&response_data[..PK_LEN])?;
         let mut addr_byte = [Default::default(); ADDR_BYTE_LEN];
         addr_byte.copy_from_slice(&response_data[PK_LEN + 1..PK_LEN + 1 + ADDR_BYTE_LEN]);
-        
+
         // Validate there's enough data for the address string
         if response_data.len() < PK_LEN + 2 + ADDR_BYTE_LEN {
             return Err(FilError::Ledger(LedgerAppError::InvalidMessageSize));
         }
-        
-        let tmp =
-            str::from_utf8(&response_data[PK_LEN + 2 + ADDR_BYTE_LEN..]).map_err(|_| LedgerAppError::Utf8)?;
+
+        let tmp = str::from_utf8(&response_data[PK_LEN + 2 + ADDR_BYTE_LEN..])
+            .map_err(|_| LedgerAppError::Utf8)?;
         let addr_string = tmp.to_owned();
 
         Ok(Address {
@@ -533,7 +542,8 @@ where
         if message.is_empty() {
             return Err(FilError::Ledger(LedgerAppError::InvalidEmptyMessage));
         }
-        self.execute_sign(path, InstructionCode::SignSecp256k1, message).await
+        self.execute_sign(path, InstructionCode::SignSecp256k1, message)
+            .await
     }
 
     /// Sign raw bytes
@@ -557,7 +567,8 @@ where
         // Append the message
         encoded_message.extend_from_slice(message);
 
-        self.execute_sign(path, InstructionCode::SignRawBytes, &encoded_message).await
+        self.execute_sign(path, InstructionCode::SignRawBytes, &encoded_message)
+            .await
     }
 
     /// Sign personal message (FVM)
@@ -575,13 +586,15 @@ where
         if message_len > u32::MAX as usize {
             return Err(FilError::Ledger(LedgerAppError::InvalidMessageSize));
         }
-        
+
         let mut encoded_message = Vec::with_capacity(message_len + 4);
-        encoded_message.write_u32::<BigEndian>(message_len as u32)
+        encoded_message
+            .write_u32::<BigEndian>(message_len as u32)
             .expect("Failed to write message length");
         encoded_message.extend_from_slice(message);
 
-        self.execute_sign(path, InstructionCode::SignPersonalMsg, &encoded_message).await
+        self.execute_sign(path, InstructionCode::SignPersonalMsg, &encoded_message)
+            .await
     }
 }
 
@@ -658,7 +671,7 @@ mod tests {
     fn test_address_display() {
         // Use a valid test public key from k256 test vectors
         let pubkey_bytes = hex::decode("04d0988bfa799f7d7ef9ab3de97ef481cd0f75d2367ad456607647edde665d6f6fbdd594388756a7beaf73b4822bc22d36e9bda7db82df2b8b623673eefc0b7495").unwrap();
-        
+
         let addr = Address {
             public_key: k256::PublicKey::from_sec1_bytes(&pubkey_bytes).unwrap(),
             addr_byte: [0; ADDR_BYTE_LEN],
@@ -675,16 +688,14 @@ mod tests {
             v: 27,
             sig: k256::ecdsa::Signature::from_der(&[
                 0x30, 0x44, 0x02, 0x20, // DER header
-                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                0x02, 0x20, // s header
-                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-            ]).unwrap(),
+                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11, 0x02, 0x20, // s header
+                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                0x22, 0x22, 0x22, 0x22,
+            ])
+            .unwrap(),
         };
         let display = sig.to_string();
         assert!(display.contains("1111111111111111"));
@@ -702,7 +713,7 @@ mod tests {
             .index(0)
             .build()
             .unwrap_err();
-        
+
         match err {
             BIP44BuilderError::MissingField(field) => assert_eq!(field, "purpose"),
         }
@@ -715,16 +726,14 @@ mod tests {
             .index(0)
             .build()
             .unwrap_err();
-        
+
         match err {
             BIP44BuilderError::MissingField(field) => assert_eq!(field, "coin"),
         }
 
         // Test missing all fields
-        let err = BIP44Path::builder()
-            .build()
-            .unwrap_err();
-        
+        let err = BIP44Path::builder().build().unwrap_err();
+
         match err {
             BIP44BuilderError::MissingField(field) => assert_eq!(field, "purpose"),
         }
@@ -778,39 +787,45 @@ mod tests {
     #[test]
     fn test_sign_raw_bytes_validation() {
         use std::io;
-        
+
         // Create a dummy transport that will never be reached
         struct DummyTransport;
-        
+
         #[ledger_transport::async_trait]
         impl Exchange for DummyTransport {
             type Error = io::Error;
             type AnswerType = Vec<u8>;
-            
-            async fn exchange<I>(&self, _command: &APDUCommand<I>) -> Result<ledger_transport::APDUAnswer<Self::AnswerType>, Self::Error>
+
+            async fn exchange<I>(
+                &self,
+                _command: &APDUCommand<I>,
+            ) -> Result<ledger_transport::APDUAnswer<Self::AnswerType>, Self::Error>
             where
                 I: std::ops::Deref<Target = [u8]> + Send + Sync,
             {
                 // This should never be reached due to early validation
-                Err(io::Error::new(io::ErrorKind::Other, "Should not reach transport"))
+                Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Should not reach transport",
+                ))
             }
         }
-        
+
         let app = FilecoinApp::new(DummyTransport);
         let path = BIP44Path::filecoin(0, 0, 0);
-        
+
         // Use tokio runtime to call the async method
         let rt = tokio::runtime::Runtime::new().unwrap();
-        
+
         // Test calling sign_raw_bytes directly with empty message
         let result = rt.block_on(app.sign_raw_bytes(&path, &[]));
         assert!(result.is_err(), "Empty message should fail validation");
-        
+
         // Verify we get the expected error
         match result.unwrap_err() {
             FilError::Ledger(LedgerAppError::InvalidEmptyMessage) => {
                 // This is what we expect - the method validated the input correctly
-            },
+            }
             other => panic!("Expected InvalidEmptyMessage, got: {:?}", other),
         }
     }
@@ -818,39 +833,45 @@ mod tests {
     #[test]
     fn test_sign_personal_msg_validation() {
         use std::io;
-        
+
         // Create a dummy transport that will never be reached
         struct DummyTransport;
-        
+
         #[ledger_transport::async_trait]
         impl Exchange for DummyTransport {
             type Error = io::Error;
             type AnswerType = Vec<u8>;
-            
-            async fn exchange<I>(&self, _command: &APDUCommand<I>) -> Result<ledger_transport::APDUAnswer<Self::AnswerType>, Self::Error>
+
+            async fn exchange<I>(
+                &self,
+                _command: &APDUCommand<I>,
+            ) -> Result<ledger_transport::APDUAnswer<Self::AnswerType>, Self::Error>
             where
                 I: std::ops::Deref<Target = [u8]> + Send + Sync,
             {
                 // This should never be reached due to early validation
-                Err(io::Error::new(io::ErrorKind::Other, "Should not reach transport"))
+                Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Should not reach transport",
+                ))
             }
         }
-        
+
         let app = FilecoinApp::new(DummyTransport);
         let path = BIP44Path::filecoin(0, 0, 0);
-        
+
         // Use tokio runtime to call the async method
         let rt = tokio::runtime::Runtime::new().unwrap();
-        
+
         // Test calling sign_personal_msg directly with empty message
         let result = rt.block_on(app.sign_personal_msg(&path, &[]));
         assert!(result.is_err(), "Empty message should fail validation");
-        
+
         // Verify we get the expected error
         match result.unwrap_err() {
             FilError::Ledger(LedgerAppError::InvalidEmptyMessage) => {
                 // This is what we expect - the method validated the input correctly
-            },
+            }
             other => panic!("Expected InvalidEmptyMessage, got: {:?}", other),
         }
     }
@@ -858,61 +879,62 @@ mod tests {
     #[test]
     fn test_sign_raw_bytes_oversized_message() {
         use std::io;
-        
+
         // Create a dummy transport that will never be reached
         struct DummyTransport;
-        
+
         #[ledger_transport::async_trait]
         impl Exchange for DummyTransport {
             type Error = io::Error;
             type AnswerType = Vec<u8>;
-            
-            async fn exchange<I>(&self, _command: &APDUCommand<I>) -> Result<ledger_transport::APDUAnswer<Self::AnswerType>, Self::Error>
+
+            async fn exchange<I>(
+                &self,
+                _command: &APDUCommand<I>,
+            ) -> Result<ledger_transport::APDUAnswer<Self::AnswerType>, Self::Error>
             where
                 I: std::ops::Deref<Target = [u8]> + Send + Sync,
             {
                 // This should never be reached due to early validation
-                Err(io::Error::new(io::ErrorKind::Other, "Should not reach transport"))
+                Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Should not reach transport",
+                ))
             }
         }
-        
+
         let app = FilecoinApp::new(DummyTransport);
         let path = BIP44Path::filecoin(0, 0, 0);
-        
+
         // Use tokio runtime to call the async method
         let rt = tokio::runtime::Runtime::new().unwrap();
-        
+
         // Create a message that exceeds u32::MAX bytes
         // We'll simulate this by creating a Vec that reports a length > u32::MAX
         // Since we can't actually allocate that much memory, we'll create a custom slice
         struct OversizedSlice;
-        
+
         impl std::ops::Deref for OversizedSlice {
             type Target = [u8];
-            
+
             fn deref(&self) -> &Self::Target {
                 // Create a slice that appears to have length > u32::MAX
                 // This is a bit of a hack but it allows us to test the validation
-                unsafe {
-                    std::slice::from_raw_parts(
-                        [0u8; 1].as_ptr(),
-                        u32::MAX as usize + 1
-                    )
-                }
+                unsafe { std::slice::from_raw_parts([0u8; 1].as_ptr(), u32::MAX as usize + 1) }
             }
         }
-        
+
         let oversized_message = OversizedSlice;
-        
+
         // Test calling sign_raw_bytes directly with oversized message
         let result = rt.block_on(app.sign_raw_bytes(&path, &*oversized_message));
         assert!(result.is_err(), "Oversized message should fail validation");
-        
+
         // Verify we get the expected error
         match result.unwrap_err() {
             FilError::Ledger(LedgerAppError::InvalidMessageSize) => {
                 // This is what we expect - the method validated the input correctly
-            },
+            }
             other => panic!("Expected InvalidMessageSize, got: {:?}", other),
         }
     }
@@ -920,58 +942,59 @@ mod tests {
     #[test]
     fn test_sign_personal_msg_oversized_message() {
         use std::io;
-        
+
         // Create a dummy transport that will never be reached
         struct DummyTransport;
-        
+
         #[ledger_transport::async_trait]
         impl Exchange for DummyTransport {
             type Error = io::Error;
             type AnswerType = Vec<u8>;
-            
-            async fn exchange<I>(&self, _command: &APDUCommand<I>) -> Result<ledger_transport::APDUAnswer<Self::AnswerType>, Self::Error>
+
+            async fn exchange<I>(
+                &self,
+                _command: &APDUCommand<I>,
+            ) -> Result<ledger_transport::APDUAnswer<Self::AnswerType>, Self::Error>
             where
                 I: std::ops::Deref<Target = [u8]> + Send + Sync,
             {
                 // This should never be reached due to early validation
-                Err(io::Error::new(io::ErrorKind::Other, "Should not reach transport"))
+                Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Should not reach transport",
+                ))
             }
         }
-        
+
         let app = FilecoinApp::new(DummyTransport);
         let path = BIP44Path::filecoin(0, 0, 0);
-        
+
         // Use tokio runtime to call the async method
         let rt = tokio::runtime::Runtime::new().unwrap();
-        
+
         // Create a message that exceeds u32::MAX bytes
         struct OversizedSlice;
-        
+
         impl std::ops::Deref for OversizedSlice {
             type Target = [u8];
-            
+
             fn deref(&self) -> &Self::Target {
                 // Create a slice that appears to have length > u32::MAX
-                unsafe {
-                    std::slice::from_raw_parts(
-                        [0u8; 1].as_ptr(),
-                        u32::MAX as usize + 1
-                    )
-                }
+                unsafe { std::slice::from_raw_parts([0u8; 1].as_ptr(), u32::MAX as usize + 1) }
             }
         }
-        
+
         let oversized_message = OversizedSlice;
-        
+
         // Test calling sign_personal_msg directly with oversized message
         let result = rt.block_on(app.sign_personal_msg(&path, &*oversized_message));
         assert!(result.is_err(), "Oversized message should fail validation");
-        
+
         // Verify we get the expected error
         match result.unwrap_err() {
             FilError::Ledger(LedgerAppError::InvalidMessageSize) => {
                 // This is what we expect - the method validated the input correctly
-            },
+            }
             other => panic!("Expected InvalidMessageSize, got: {:?}", other),
         }
     }

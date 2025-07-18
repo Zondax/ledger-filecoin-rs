@@ -23,7 +23,10 @@ extern crate ledger_filecoin;
 
 use blake2::{digest::typenum, Blake2b, Digest};
 use ecdsa::VerifyingKey;
-use k256::{elliptic_curve::sec1::ToEncodedPoint, ecdsa::{signature::DigestVerifier, Signature}};
+use k256::{
+    ecdsa::{signature::DigestVerifier, Signature},
+    elliptic_curve::sec1::ToEncodedPoint,
+};
 
 use ledger_filecoin::{BIP44Path, FilError, FilecoinApp, LedgerAppError};
 use ledger_transport_hid::{hidapi::HidApi, TransportNativeHID};
@@ -51,10 +54,13 @@ async fn version() {
     println!("minor {}", version.minor);
     println!("patch {}", version.patch);
 
-    assert!(version.major != 0 || version.minor != 0 || version.patch != 0,
+    assert!(
+        version.major != 0 || version.minor != 0 || version.patch != 0,
         "major, minor, and patch are all zero; version not set correctly (got: {}.{}.{})",
-        version.major, version.minor, version.patch);
-
+        version.major,
+        version.minor,
+        version.patch
+    );
 }
 
 #[tokio::test]
@@ -185,7 +191,8 @@ async fn sign_verify() {
     let mut blake2b_for_verify = Blake2b256::new();
     blake2b_for_verify.update(&cid);
 
-    let verifying_key = VerifyingKey::from_encoded_point(&addr.public_key.to_encoded_point(true)).unwrap();
+    let verifying_key =
+        VerifyingKey::from_encoded_point(&addr.public_key.to_encoded_point(true)).unwrap();
 
     // Test that we can perform signature verification (result may vary based on hardware setup)
     let verification_result = verifying_key.verify_digest(blake2b_for_verify, &signature.sig);
@@ -218,7 +225,10 @@ async fn sign_raw_bytes() {
     message.extend_from_slice(&blob);
 
     let signature = app.sign_raw_bytes(&path, &message).await.unwrap();
-    println!("Raw bytes signature: {:#?}", hex::encode(&signature.sig.to_vec()));
+    println!(
+        "Raw bytes signature: {:#?}",
+        hex::encode(&signature.sig.to_vec())
+    );
 
     // Step 1: Hash the message
     let mut blake2b = Blake2b256::new();
@@ -237,7 +247,8 @@ async fn sign_raw_bytes() {
     let mut blake2b_for_verify = Blake2b256::new();
     blake2b_for_verify.update(&cid);
 
-    let verifying_key = VerifyingKey::from_encoded_point(&addr.public_key.to_encoded_point(true)).unwrap();
+    let verifying_key =
+        VerifyingKey::from_encoded_point(&addr.public_key.to_encoded_point(true)).unwrap();
 
     // Test that we can perform signature verification (result may vary based on hardware setup)
     let verification_result = verifying_key.verify_digest(blake2b_for_verify, &signature.sig);
@@ -264,16 +275,18 @@ async fn sign_personal_msg() {
     // First, get public key for verification
     let addr = app.address(&path, false).await.unwrap();
 
-    let signature = app.sign_personal_msg(&path, personal_message).await.unwrap();
+    let signature = app
+        .sign_personal_msg(&path, personal_message)
+        .await
+        .unwrap();
 
     let prefix = b"\x19Filecoin Signed Message:\n";
     let length_bytes = (personal_message.len() as u32).to_be_bytes();
-    
+
     let mut message_with_prefix = Vec::new();
     message_with_prefix.extend_from_slice(prefix);
     message_with_prefix.extend_from_slice(&length_bytes);
     message_with_prefix.extend_from_slice(personal_message);
-
 
     let mut reconstructed_sig_bytes = [0u8; 64];
     reconstructed_sig_bytes[0..32].copy_from_slice(&signature.r);
@@ -281,14 +294,22 @@ async fn sign_personal_msg() {
     let reconstructed_signature = Signature::from_bytes((&reconstructed_sig_bytes).into()).unwrap();
 
     // Create verifying key from the public key
-    let verifying_key = VerifyingKey::from_encoded_point(&addr.public_key.to_encoded_point(true)).unwrap();
+    let verifying_key =
+        VerifyingKey::from_encoded_point(&addr.public_key.to_encoded_point(true)).unwrap();
 
     // Verify the signature using the same pre-hash Blake2b-256 (avoiding double SHA-256)
     let mut blake2b_for_verify = Blake2b256::new();
     blake2b_for_verify.update(&message_with_prefix);
-    let reconstructed_verification = verifying_key.verify_digest(blake2b_for_verify, &reconstructed_signature);
-    println!("Signature verification result: {:?}", reconstructed_verification);
-    assert!(reconstructed_verification.is_ok(), "Signature verification failed");
+    let reconstructed_verification =
+        verifying_key.verify_digest(blake2b_for_verify, &reconstructed_signature);
+    println!(
+        "Signature verification result: {:?}",
+        reconstructed_verification
+    );
+    assert!(
+        reconstructed_verification.is_ok(),
+        "Signature verification failed"
+    );
 }
 
 #[tokio::test]
@@ -305,7 +326,7 @@ async fn sign_personal_msg_long_message() {
     };
 
     // Generate random personal message
-    use rand::{RngCore, rng};
+    use rand::{rng, RngCore};
     let mut personal_message = [0u8; 300];
     let mut rng = rng();
     rng.fill_bytes(&mut personal_message);
@@ -313,16 +334,18 @@ async fn sign_personal_msg_long_message() {
     // First, get public key for verification
     let addr = app.address(&path, false).await.unwrap();
 
-    let signature = app.sign_personal_msg(&path, &personal_message).await.unwrap();
+    let signature = app
+        .sign_personal_msg(&path, &personal_message)
+        .await
+        .unwrap();
 
     let prefix = b"\x19Filecoin Signed Message:\n";
     let length_bytes = (personal_message.len() as u32).to_be_bytes();
-    
+
     let mut message_with_prefix = Vec::new();
     message_with_prefix.extend_from_slice(prefix);
     message_with_prefix.extend_from_slice(&length_bytes);
     message_with_prefix.extend_from_slice(&personal_message);
-
 
     let mut reconstructed_sig_bytes = [0u8; 64];
     reconstructed_sig_bytes[0..32].copy_from_slice(&signature.r);
@@ -330,12 +353,20 @@ async fn sign_personal_msg_long_message() {
     let reconstructed_signature = Signature::from_bytes((&reconstructed_sig_bytes).into()).unwrap();
 
     // Create verifying key from the public key
-    let verifying_key = VerifyingKey::from_encoded_point(&addr.public_key.to_encoded_point(true)).unwrap();
+    let verifying_key =
+        VerifyingKey::from_encoded_point(&addr.public_key.to_encoded_point(true)).unwrap();
 
     // Verify the signature using the same pre-hash Blake2b-256 (avoiding double SHA-256)
     let mut blake2b_for_verify = Blake2b256::new();
     blake2b_for_verify.update(&message_with_prefix);
-    let reconstructed_verification = verifying_key.verify_digest(blake2b_for_verify, &reconstructed_signature);
-    println!("Signature verification result: {:?}", reconstructed_verification);
-    assert!(reconstructed_verification.is_ok(), "Signature verification failed");
+    let reconstructed_verification =
+        verifying_key.verify_digest(blake2b_for_verify, &reconstructed_signature);
+    println!(
+        "Signature verification result: {:?}",
+        reconstructed_verification
+    );
+    assert!(
+        reconstructed_verification.is_ok(),
+        "Signature verification failed"
+    );
 }
