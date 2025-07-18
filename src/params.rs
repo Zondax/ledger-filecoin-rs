@@ -23,4 +23,6 @@ pub const CLA: u8 = 0x06;
 pub enum InstructionCode {
     GetAddrSecp256k1 = 1,
     SignSecp256k1 = 2,
+    SignRawBytes = 7,
+    SignPersonalMsg = 8,
 }

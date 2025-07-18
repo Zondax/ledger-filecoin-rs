@@ -3,7 +3,7 @@ name = "ledger-filecoin"
 description = "Library to integrate with the Ledger Filecoin app"
 version = "0.12.0"
 license = "Apache-2.0"
-authors = ["Zondax GmbH <info@zondax.ch>"]
+authors = ["Zondax AG <info@zondax.ch>"]
 homepage = "https://github.com/ZondaX/ledger-filecoin-rs"
 repository = "https://github.com/ZondaX/ledger-filecoin-rs"
 readme = "README.md"
@@ -22,18 +22,21 @@ ledger-zondax-generic = "0.11.2"
 thiserror = "2.0.12"
 
 byteorder = "1.4.3"
+hex = "0.4.3"
+integer-encoding = "4.0"
 k256 = { version = "^0.13", features = ["ecdsa-core", "arithmetic", "std"], default-features = false }
 
 [dev-dependencies]
-hex = "0.4.3"
-once_cell = "1.10.0"
-blake2 = "0.10.4"
+rand = "0.9"
+once_cell = "1.21"
+blake2 = "0.10.6"
 k256 = "^0.13"
+secp256k1 = "0.31"
 ecdsa = { version = "0.16.9", features = ["verifying"] }
 
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.46", features = ["full"] }
 ledger-transport-hid = "0.11.0"
-serial_test = "3.1.1"
+serial_test = "3.2.0"
 
 [profile.release]
 overflow-checks = true

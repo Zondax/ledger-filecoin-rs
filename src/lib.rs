@@ -29,6 +29,8 @@ mod params;
 use params::{InstructionCode, CLA};
 
 use std::str;
+use byteorder::{BigEndian, WriteBytesExt};
+use integer_encoding::VarInt;
 
 /// Public Key Length
 const PK_LEN: usize = 65;
@@ -214,6 +216,141 @@ where
 
         let response =
             <Self as AppExt<E>>::send_chunks(&self.apdu_transport, start_command, message).await?;
+
+        let response_data = response.data();
+        match response.error_code() {
+            Ok(APDUErrorCode::NoError) if response_data.is_empty() => {
+                return Err(FilError::Ledger(LedgerAppError::NoSignature))
+            }
+            // Last response should contain the answer
+            Ok(APDUErrorCode::NoError) if response_data.len() < 3 => {
+                return Err(FilError::Ledger(LedgerAppError::InvalidSignature))
+            }
+            Ok(APDUErrorCode::NoError) => {}
+            Ok(err) => {
+                return Err(FilError::Ledger(LedgerAppError::AppSpecific(
+                    err as _,
+                    err.description(),
+                )))
+            }
+            Err(err) => {
+                return Err(FilError::Ledger(LedgerAppError::AppSpecific(
+                    err,
+                    "[APDU_ERROR] Unknown".to_string(),
+                )))
+            }
+        }
+
+        let mut r = [0; 32];
+        r.copy_from_slice(&response_data[..32]);
+
+        let mut s = [0; 32];
+        s.copy_from_slice(&response_data[32..64]);
+
+        let v = response_data[64];
+
+        let sig = k256::ecdsa::Signature::from_der(&response_data[65..])?;
+
+        let signature = Signature { r, s, v, sig };
+
+        Ok(signature)
+    }
+
+    /// Sign raw bytes
+    pub async fn sign_raw_bytes(
+        &self,
+        path: &BIP44Path,
+        message: &[u8],
+    ) -> Result<Signature, FilError<E::Error>> {
+        if message.is_empty() {
+            return Err(FilError::Ledger(LedgerAppError::InvalidEmptyMessage));
+        }
+
+        let bip44path = path.serialize_bip44();
+
+        // Encode message length using varint (no padding)
+        let mut encoded_message = message.len().encode_var_vec();
+
+        // Append the message
+        encoded_message.extend_from_slice(message);
+
+        let start_command = APDUCommand {
+            cla: CLA,
+            ins: InstructionCode::SignRawBytes as _,
+            p1: ChunkPayloadType::Init as u8,
+            p2: 0x00,
+            data: bip44path,
+        };
+
+        let response =
+            <Self as AppExt<E>>::send_chunks(&self.apdu_transport, start_command, &encoded_message).await?;
+
+        let response_data = response.data();
+        match response.error_code() {
+            Ok(APDUErrorCode::NoError) if response_data.is_empty() => {
+                return Err(FilError::Ledger(LedgerAppError::NoSignature))
+            }
+            // Last response should contain the answer
+            Ok(APDUErrorCode::NoError) if response_data.len() < 3 => {
+                return Err(FilError::Ledger(LedgerAppError::InvalidSignature))
+            }
+            Ok(APDUErrorCode::NoError) => {}
+            Ok(err) => {
+                return Err(FilError::Ledger(LedgerAppError::AppSpecific(
+                    err as _,
+                    err.description(),
+                )))
+            }
+            Err(err) => {
+                return Err(FilError::Ledger(LedgerAppError::AppSpecific(
+                    err,
+                    "[APDU_ERROR] Unknown".to_string(),
+                )))
+            }
+        }
+
+        let mut r = [0; 32];
+        r.copy_from_slice(&response_data[..32]);
+
+        let mut s = [0; 32];
+        s.copy_from_slice(&response_data[32..64]);
+
+        let v = response_data[64];
+
+        let sig = k256::ecdsa::Signature::from_der(&response_data[65..])?;
+
+        let signature = Signature { r, s, v, sig };
+
+        Ok(signature)
+    }
+
+    /// Sign personal message (FVM)
+    pub async fn sign_personal_msg(
+        &self,
+        path: &BIP44Path,
+        message: &[u8],
+    ) -> Result<Signature, FilError<E::Error>> {
+        if message.is_empty() {
+            return Err(FilError::Ledger(LedgerAppError::InvalidEmptyMessage));
+        }
+
+        let bip44path = path.serialize_bip44();
+
+        // Encode message with 4-byte big-endian length prefix
+        let mut encoded_message = Vec::new();
+        encoded_message.write_u32::<BigEndian>(message.len() as u32).unwrap();
+        encoded_message.extend_from_slice(message);
+
+        let start_command = APDUCommand {
+            cla: CLA,
+            ins: InstructionCode::SignPersonalMsg as _,
+            p1: ChunkPayloadType::Init as u8,
+            p2: 0x00,
+            data: bip44path,
+        };
+
+        let response =
+            <Self as AppExt<E>>::send_chunks(&self.apdu_transport, start_command, &encoded_message).await?;
 
         let response_data = response.data();
         match response.error_code() {
