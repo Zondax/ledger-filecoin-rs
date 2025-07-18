@@ -32,6 +32,7 @@ use ledger_filecoin::{BIP44Path, FilError, FilecoinApp, LedgerAppError};
 use ledger_transport_hid::{hidapi::HidApi, TransportNativeHID};
 
 use once_cell::sync::Lazy;
+use rand::RngCore;
 use serial_test::serial;
 
 static HIDAPI: Lazy<HidApi> = Lazy::new(|| HidApi::new().expect("Failed to create Hidapi"));
@@ -326,10 +327,8 @@ async fn sign_personal_msg_long_message() {
     };
 
     // Generate random personal message
-    use rand::{rng, RngCore};
     let mut personal_message = [0u8; 300];
-    let mut rng = rng();
-    rng.fill_bytes(&mut personal_message);
+    rand::rng().fill_bytes(&mut personal_message);
 
     // First, get public key for verification
     let addr = app.address(&path, false).await.unwrap();
