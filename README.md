@@ -1,7 +1,7 @@
 # Rust library for Ledger Filecoin app
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-This package provides a basic Rust client library to communicate with the Filecoin App running in a Ledger Nano S/X devices
+This package provides a basic Rust client library to communicate with the Filecoin App running in a Ledger Nano S+/X, Stax and Flex devices
 
 ## Build
 
