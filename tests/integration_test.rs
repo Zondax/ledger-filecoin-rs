@@ -282,11 +282,11 @@ async fn sign_personal_msg() {
         .unwrap();
 
     let prefix = b"\x19Filecoin Signed Message:\n";
-    let length_bytes = (personal_message.len() as u32).to_be_bytes();
+    let length_string = personal_message.len().to_string();
 
     let mut message_with_prefix = Vec::new();
     message_with_prefix.extend_from_slice(prefix);
-    message_with_prefix.extend_from_slice(&length_bytes);
+    message_with_prefix.extend_from_slice(length_string.as_bytes());
     message_with_prefix.extend_from_slice(personal_message);
 
     let mut reconstructed_sig_bytes = [0u8; 64];
@@ -339,11 +339,11 @@ async fn sign_personal_msg_long_message() {
         .unwrap();
 
     let prefix = b"\x19Filecoin Signed Message:\n";
-    let length_bytes = (personal_message.len() as u32).to_be_bytes();
+    let length_string = personal_message.len().to_string();
 
     let mut message_with_prefix = Vec::new();
     message_with_prefix.extend_from_slice(prefix);
-    message_with_prefix.extend_from_slice(&length_bytes);
+    message_with_prefix.extend_from_slice(length_string.as_bytes());
     message_with_prefix.extend_from_slice(&personal_message);
 
     let mut reconstructed_sig_bytes = [0u8; 64];
