@@ -48,12 +48,12 @@ fn app() -> FilecoinApp<TransportNativeHID> {
 fn prepare_personal_message_with_prefix(personal_message: &[u8]) -> Vec<u8> {
     let prefix = b"\x19Filecoin Signed Message:\n";
     let length_string = personal_message.len().to_string();
-    
+
     let mut message_with_prefix = Vec::new();
     message_with_prefix.extend_from_slice(prefix);
     message_with_prefix.extend_from_slice(length_string.as_bytes());
     message_with_prefix.extend_from_slice(personal_message);
-    
+
     message_with_prefix
 }
 
