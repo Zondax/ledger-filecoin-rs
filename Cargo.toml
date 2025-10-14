@@ -34,7 +34,7 @@ k256 = "^0.13"
 secp256k1 = "0.31"
 ecdsa = { version = "0.16.9", features = ["verifying"] }
 
-tokio = { version = "1.46", features = ["full"] }
+tokio = { version = "1.48", features = ["full"] }
 ledger-transport-hid = "0.11.0"
 serial_test = "3.2.0"
 
