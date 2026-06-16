@@ -1,6 +1,7 @@
 name: Scheduled security audit
 
 on:
+  workflow_dispatch:
   schedule:
     # run everyday at midnight
     - cron: '0 0 * * *'
