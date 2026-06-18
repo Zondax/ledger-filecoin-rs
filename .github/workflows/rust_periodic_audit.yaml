@@ -1,6 +1,7 @@
 name: Scheduled security audit
 
 on:
+  workflow_dispatch:
   schedule:
     # run everyday at midnight
     - cron: '0 0 * * *'
@@ -13,11 +14,8 @@ jobs:
         with:
           submodules: true
 
-      - run: cargo audit
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
 
-      # disabled until we can change directory
-      # see https://github.com/actions-rs/audit-check/issues/194
-      # - name: Run audit
-      #   uses: actions-rs/audit-check@v1
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
+      - run: cargo audit
