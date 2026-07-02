@@ -27,7 +27,7 @@ integer-encoding = "4.0"
 k256 = { version = "^0.13", features = ["ecdsa-core", "arithmetic", "std"], default-features = false }
 
 [dev-dependencies]
-rand = "0.9"
+rand = "0.10"
 once_cell = "1.21"
 blake2 = "0.10.6"
 k256 = "^0.13"
