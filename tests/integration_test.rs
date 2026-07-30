@@ -32,7 +32,7 @@ use ledger_filecoin::{BIP44Path, FilError, FilecoinApp, LedgerAppError};
 use ledger_transport_hid::{hidapi::HidApi, TransportNativeHID};
 
 use once_cell::sync::Lazy;
-use rand::RngCore;
+use rand::Rng;
 use serial_test::serial;
 
 static HIDAPI: Lazy<HidApi> = Lazy::new(|| HidApi::new().expect("Failed to create Hidapi"));
