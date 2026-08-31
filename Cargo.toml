@@ -29,7 +29,7 @@ k256 = { version = "^0.13", features = ["ecdsa-core", "arithmetic", "std"], defa
 [dev-dependencies]
 rand = "0.10"
 once_cell = "1.21"
-blake2 = "0.10.6"
+blake2 = "0.11.0"
 k256 = "^0.13"
 secp256k1 = "0.31"
 ecdsa = { version = "0.16.9", features = ["verifying"] }
