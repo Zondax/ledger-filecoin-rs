@@ -31,7 +31,7 @@ rand = "0.10"
 once_cell = "1.21"
 blake2 = "0.10.6"
 k256 = "^0.13"
-secp256k1 = "0.31"
+secp256k1 = "0.33"
 ecdsa = { version = "0.16.9", features = ["verifying"] }
 
 tokio = { version = "1.46", features = ["full"] }
